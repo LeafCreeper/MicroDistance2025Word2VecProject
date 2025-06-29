@@ -14,7 +14,7 @@ class SequentialEmbedding:
             embeds[year] = Embedding.load(path + "/" + str(year), **kwargs)
         return SequentialEmbedding(embeds)
 
-    def get_embed(self, year):
+    def get_embed(self, year) -> Embedding:
         return self.embeds[year]
 
     def get_subembeds(self, words, normalize=True):

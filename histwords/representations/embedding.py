@@ -86,6 +86,10 @@ class Embedding:
         scores = self.m.dot(self.represent(w))
         return heapq.nlargest(n, list(zip(scores, self.iw)))
     
+    def vec_closest(self, vec, n=10):
+        scores = self.m.dot(vec)  # self.m 是词向量矩阵，行为向量
+        return heapq.nlargest(n, zip(scores, self.iw))
+
 
 class SVDEmbedding(Embedding):
     """
