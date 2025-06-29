@@ -55,14 +55,14 @@ for score, word in neighbors:
 
 ```python
 from representations.sequentialembedding import SequentialEmbedding
-years = range(1990, 2020, 10)
+years = range(1950, 2000, 10)
 semb = SequentialEmbedding.load('/path/to/embedding_dir', years)
 ```
 
 ### 3.2 获取某一年份的 Embedding
 
 ```python
-embed_2000 = semb.get_embed(2000)
+embed_2000 = semb.get_embed(1950)
 ```
 
 ### 3.3 获取某个词在各年份的向量
