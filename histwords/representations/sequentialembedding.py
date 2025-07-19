@@ -2,6 +2,7 @@ import collections
 import random
 
 from representations.embedding import Embedding, SVDEmbedding
+import numpy as np
 
 class SequentialEmbedding:
     def __init__(self, year_embeds, **kwargs):
@@ -29,7 +30,7 @@ class SequentialEmbedding:
            time_sims[year] = embed.similarity(word1, word2)
        return time_sims
 
-    def get_seq_neighbour_set(self, word, n=3):
+    def get_seq_neighbour_set(self, word, n=5):
         neighbour_set = set([])
         for embed in list(self.embeds.values()):
             closest = embed.closest(word, n=n)
@@ -70,6 +71,52 @@ class SequentialEmbedding:
         for year,embed in list(self.embeds.items()):
             year_subembeds[year] = embed.get_subembed(word_list)
         return SequentialEmbedding(year_subembeds)
+    
+    def get_projection_by_year(self, positive_words, negative_words, target_word):
+        """
+        计算 target_word 在语义轴（由正反义词组成）上的投影随时间的变化。
+
+        返回:
+            dict: {year: projection_score (float or None)}
+
+        如果某些词不在词表中，会跳过这些词，同时打印调试信息。
+        """
+        projection_scores = {}
+        for year, embed in self.embeds.items():
+            # 检查词是否存在
+            missing_pos = [w for w in positive_words if w not in embed]
+            missing_neg = [w for w in negative_words if w not in embed]
+            target_missing = target_word not in embed
+
+            if missing_pos or missing_neg or target_missing:
+                print(f"[提示] {year} 年词表中缺失词汇："
+                      f"{'正向词: ' + ', '.join(missing_pos) if missing_pos else ''} "
+                      f"{'反向词: ' + ', '.join(missing_neg) if missing_neg else ''} "
+                      f"{'目标词: ' + target_word if target_missing else ''}")
+
+            if target_missing:
+                projection_scores[year] = None
+                continue
+
+            valid_pos = [embed.represent(w) for w in positive_words if w in embed]
+            valid_neg = [embed.represent(w) for w in negative_words if w in embed]
+
+            if not valid_pos or not valid_neg:
+                projection_scores[year] = None
+                continue
+
+            pos_vec = np.mean(valid_pos, axis=0)
+            neg_vec = np.mean(valid_neg, axis=0)
+            axis_vec = pos_vec - neg_vec
+
+            target_vec = embed.represent(target_word)
+            projection = np.dot(target_vec, axis_vec) / (
+                np.linalg.norm(target_vec) * np.linalg.norm(axis_vec))
+            projection_scores[year] = float(projection)
+
+        return projection_scores
+
+    
 
 
 class SequentialSVDEmbedding(SequentialEmbedding):

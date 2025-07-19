@@ -69,10 +69,10 @@ class Embedding:
         if w in self.wi:
             return self.m[self.wi[w], :]
         else:
-            print(("OOV: ", w))
+            print(f"[OOV] 词{w}不在词表中")
             return np.zeros(self.dim)
 
-    def similarity(self, w1, w2):
+    def similarity(self, w1:str, w2:str):
         """
         Assumes the vectors have been normalized.
         """
@@ -89,6 +89,50 @@ class Embedding:
     def vec_closest(self, vec, n=10):
         scores = self.m.dot(vec)  # self.m 是词向量矩阵，行为向量
         return heapq.nlargest(n, zip(scores, self.iw))
+    
+    def get_projection(self, positive_words, negative_words, target_word, verbose=True):
+        """
+        计算目标词在由正反义词构成的语义轴上的投影分数。
+
+        参数:
+            positive_words (list[str]): 正向词列表，如 ["man", "he"]
+            negative_words (list[str]): 反向词列表，如 ["woman", "she"]
+            target_word (str): 需要投影的词
+            verbose (bool): 是否打印缺失词信息
+
+        返回:
+            float or None: 投影分数（[-1, 1]区间），若无法计算则返回 None
+        """
+        missing_pos = [w for w in positive_words if w not in self]
+        missing_neg = [w for w in negative_words if w not in self]
+        target_missing = target_word not in self
+
+        if verbose and (missing_pos or missing_neg or target_missing):
+            print(f"[提示] 缺失词："
+                  f"{'正向词: ' + ', '.join(missing_pos) if missing_pos else ''} "
+                  f"{'反向词: ' + ', '.join(missing_neg) if missing_neg else ''} "
+                  f"{'目标词: ' + target_word if target_missing else ''}")
+
+        if target_missing:
+            print("目标词不在词表中，无法计算")
+            return None
+
+        valid_pos = [self.represent(w) for w in positive_words if w in self]
+        valid_neg = [self.represent(w) for w in negative_words if w in self]
+
+        if not valid_pos or not valid_neg:
+            return None
+
+        pos_vec = np.mean(valid_pos, axis=0)
+        neg_vec = np.mean(valid_neg, axis=0)
+        axis_vec = pos_vec - neg_vec
+
+        target_vec = self.represent(target_word)
+        projection = np.dot(target_vec, axis_vec) / (
+            np.linalg.norm(target_vec) * np.linalg.norm(axis_vec))
+
+        return float(projection)
+
 
 
 class SVDEmbedding(Embedding):

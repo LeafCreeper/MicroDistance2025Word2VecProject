@@ -32,7 +32,7 @@ def get_cmap(n, name='YlGn'):
     return plt.cm.get_cmap(name, n+CMAP_MIN)
 
 # this is based on embedding.py get_time_sims
-def get_time_sims(self, word1):
+def get_time_sims(self, word1, topn = 10):
     start = time.time()
     time_sims = collections.OrderedDict()
     lookups = {}
@@ -43,10 +43,10 @@ def get_time_sims(self, word1):
         nearests["%s|%s" % (word1, year)]= nearest
         time_sims[year] = []
 
-        for sim, word in embed.closest(word1, n=15):
+        for sim, word in embed.closest(word1, n=topn):
             ww = "%s|%s" % (word, year)
             nearest.append((sim, ww))
-            if sim > 0.3:
+            if sim > 0.4:
                 time_sims[year].append((sim, ww))
                 lookups[ww] = embed.represent(word)
                 sims[ww] = sim
